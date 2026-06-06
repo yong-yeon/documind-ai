@@ -1,0 +1,10 @@
+.env
+__pycache__/
+*.pyc
+*.pyo
+data/
+*.pdf
+*.docx
+*.xlsx
+*.pptx
+.streamlit/secrets.toml
