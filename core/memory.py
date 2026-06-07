@@ -8,6 +8,9 @@ def init_memory():
     """
     대화 메모리 초기화 함수
     session_state 에 chat_history 가 없으면 빈 리스트로 초기화
+
+    Streamlit 은 버튼 클릭마다 전체 코드 재실행
+    → session_state 로 대화 기록 유지 필수!
     """
     if "chat_history" not in st.session_state:
         st.session_state.chat_history = []
@@ -59,6 +62,7 @@ def get_history_as_string(max_turns: int = 5) -> str:
         return "이전 대화 없음"
 
     # 최근 max_turns * 2 개만 가져옴
+    # 질문 1개 + 답변 1개 = 2개 이므로 *2
     recent = history[-(max_turns * 2):]
 
     result = []
