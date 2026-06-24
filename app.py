@@ -2,7 +2,7 @@ import streamlit as st
 from ui.styles import apply_styles, render_header, render_empty_state
 from ui.sidebar import render_sidebar
 from ui.chat import render_chat
-from core.loader import load_pdf
+from core.loader import load_file
 from core.vectorstore import create_vectorstore, get_retriever
 
 
@@ -32,7 +32,7 @@ if settings["uploaded_file"]:
         with st.spinner("📄 문서를 분석하는 중이에요... 잠시만 기다려주세요!"):
             try:
                 # PDF 읽기 + 분할
-                split_docs = load_pdf(
+                split_docs = load_file(
                     settings["uploaded_file"],
                     chunk_size=settings["chunk_size"],
                     chunk_overlap=settings["chunk_overlap"]
