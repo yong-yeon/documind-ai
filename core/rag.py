@@ -16,9 +16,6 @@ from langchain_core.runnables import RunnablePassthrough
 def create_llm():
     """
     LLM 모델 생성 함수
-
-    Returns:
-        llm : ChatGroq 객체
     """
     api_key = get_groq_api_key()
 
@@ -35,25 +32,41 @@ def create_llm():
 def create_prompt():
     """
     프롬프트 템플릿 생성 함수
-
-    Returns:
-        prompt : PromptTemplate 객체
     """
     prompt = PromptTemplate.from_template("""
-당신은 문서 분석 전문가입니다.
-아래 문서 내용과 이전 대화 기록을 바탕으로 질문에 한국어로 상세하게 답변해주세요.
-문서에 없는 내용은 "문서에서 찾을 수 없습니다" 라고 답변해주세요.
-답변 마지막에 반드시 참고한 내용의 페이지 번호를 표시해주세요.
+당신은 문서 분석 전문가 AI입니다.
 
-이전 대화 기록 :
+[역할]
+사용자가 제공한 문서(Context)를 기반으로 질문에 정확하게 답변합니다.
+
+[규칙]
+1. 문서의 언어와 상관없이 사용자 질문의 언어로 답변하세요. (예: 영어 문서 + 한국어 질문 → 한국어로 번역해서 답변)
+2. 제공된 문서(Context) 내용만 사용하세요.
+3. 외부 지식이나 추측은 사용하지 마세요.
+4. 문서에서 근거를 찾을 수 없으면 정확히 다음 문장을 출력하세요. "문서에서 찾을 수 없습니다."
+5. 답변은 간결하고 명확하게 작성하세요.
+6. 동일한 내용을 반복하지 마세요.
+7. 답변은 Markdown 형식으로 작성하세요.
+8. 문서에 표가 포함되어 있으면 가능한 한 표 형태를 유지하세요.
+9. 여러 페이지의 내용을 참고했다면 모든 페이지를 표시하세요.
+10. 페이지 번호는 추측하지 말고 Context에 포함된 정보만 사용하세요.
+11. 페이지 번호는 숫자 + "페이지" 형식으로 표시하세요. (예: 13페이지)
+
+[이전 대화]
 {chat_history}
 
-문서 내용 :
+[문서 내용]
 {context}
 
-질문 : {question}
+[사용자 질문]
+{question}
 
-답변 :
+[답변 형식]
+답변
+(질문에 대한 답변)
+
+참고 페이지
+3페이지 또는 3페이지, 5페이지
 """)
     return prompt
 
@@ -61,12 +74,7 @@ def create_prompt():
 def format_docs(docs) -> str:
     """
     검색된 문서 조각들을 하나의 문자열로 합치는 함수
-
-    Args:
-        docs : 검색된 문서 조각 리스트
-
-    Returns:
-        formatted : 페이지 정보 포함한 문자열
+    페이지 정보 포함
     """
     result = []
     for doc in docs:
@@ -121,7 +129,6 @@ def get_sources(retriever, query: str) -> list:
     for doc in docs:
         page = doc.metadata.get("page", "?")
         source = os.path.basename(doc.metadata.get("source", "알 수 없음"))
-        # page 가 "?" 일 때 int 변환 오류 방지
         page_num = int(page) + 1 if page != "?" else "?"
         sources.append({
             "파일명": source,
@@ -142,25 +149,21 @@ def print_rag_test(split_docs):
     print("  rag.py 테스트")
     print("=" * 40)
 
-    # 1. 벡터 저장소 + 검색기 생성
     print("✅ 벡터 저장소 생성 중...")
     vectorstore = create_vectorstore(split_docs)
-    retriever = get_retriever(vectorstore)
+    retriever = get_retriever(vectorstore, split_docs)
     print("✅ 벡터 저장소 생성 완료")
 
-    # 2. 체인 생성
     print("✅ RAG 체인 생성 중...")
     chain = create_chain(retriever)
     print("✅ RAG 체인 생성 완료")
 
-    # 3. 질문 테스트
     question = "서울 지하철 하루 평균 이용객 수는 얼마야?"
     print(f"\n질문 : {question}")
     print("\n답변 생성 중...")
     answer = chain.invoke(question)
     print(f"\n답변 :\n{answer}")
 
-    # 4. 출처 확인
     print("\n--- 참고 출처 ---")
     sources = get_sources(retriever, question)
     for s in sources:
