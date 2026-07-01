@@ -1,25 +1,17 @@
-import streamlit as st
-import markdown as md
+import streamlit as st   # CSS 주입 및 HTML 렌더링
+import markdown as md   # AI 답변 마크다운을 HTML로 변환
 
 
 def apply_styles():
-    """
-    전체 앱 CSS 스타일 적용 함수
-    app.py 에서 가장 먼저 호출해야 함
-    """
     st.markdown("""
     <style>
 
-    /* ─────────────────────────────────────────
-       1. 전체 배경 + 기본 설정
-    ───────────────────────────────────────── */
+    /* 전체 배경색 */
     .stApp {
         background-color: #f7f8fc;
     }
 
-    /* ─────────────────────────────────────────
-       2. 헤더
-    ───────────────────────────────────────── */
+    /* 상단 헤더 카드 */
     .main-header {
         background: linear-gradient(135deg, #1f4e79, #2e75b6);
         color: white;
@@ -28,28 +20,22 @@ def apply_styles():
         margin-bottom: 24px;
         text-align: center;
     }
-
     .main-header h1 {
         font-size: 2rem;
         font-weight: 800;
         margin: 0;
     }
-
     .main-header p {
         font-size: 0.95rem;
         margin: 8px 0 0 0;
         opacity: 0.85;
     }
 
-    /* ─────────────────────────────────────────
-       3. 사이드바
-       ② 수정 : * !important 제거
-          → 드롭다운 메뉴 글씨 사라지는 버그 방지
-    ───────────────────────────────────────── */
+    /* 사이드바 배경색 */
     [data-testid="stSidebar"] {
         background-color: #1f4e79;
     }
-
+    /* 사이드바 텍스트를 흰색으로 통일 */
     [data-testid="stSidebar"] p,
     [data-testid="stSidebar"] label,
     [data-testid="stSidebar"] span,
@@ -59,15 +45,12 @@ def apply_styles():
         color: white !important;
     }
 
-    /* ─────────────────────────────────────────
-       4. 채팅 말풍선
-    ───────────────────────────────────────── */
+    /* 사용자 말풍선 (오른쪽 정렬) */
     .chat-user-wrap {
         display: flex;
         justify-content: flex-end;
         margin: 12px 0;
     }
-
     .chat-user {
         background: linear-gradient(135deg, #1f4e79, #2e75b6);
         color: white;
@@ -79,12 +62,12 @@ def apply_styles():
         box-shadow: 0 2px 8px rgba(31,78,121,0.2);
     }
 
+    /* AI 말풍선 (왼쪽 정렬) */
     .chat-ai-wrap {
         display: flex;
         justify-content: flex-start;
         margin: 12px 0;
     }
-
     .chat-ai {
         background: white;
         color: #2c3e50;
@@ -97,7 +80,7 @@ def apply_styles():
         border-left: 4px solid #2e75b6;
     }
 
-    /* ① 수정 : 마크다운 렌더링 스타일 추가 */
+    /* AI 말풍선 내부 마크다운 스타일 */
     .chat-ai p { margin: 0 0 8px 0; }
     .chat-ai p:last-child { margin-bottom: 0; }
     .chat-ai ul, .chat-ai ol { margin: 8px 0; padding-left: 20px; }
@@ -118,19 +101,34 @@ def apply_styles():
         font-size: 0.85rem;
     }
 
-    .chat-label {
-        font-size: 0.75rem;
-        color: #888;
-        margin-bottom: 4px;
+    /* AI 말풍선 내부 마크다운 표 */
+    .chat-ai table {
+        border-collapse: collapse;
+        width: 100%;
+        margin: 10px 0;
+        font-size: 0.88rem;
+        overflow-x: auto;
+        display: block;
     }
-
-    .chat-label-right {
-        text-align: right;
+    .chat-ai th, .chat-ai td {
+        border: 1px solid #d0dff5;
+        padding: 7px 12px;
+        text-align: left;
+        white-space: nowrap;
     }
+    .chat-ai th {
+        background: #1f4e79;
+        color: white;
+        font-weight: 700;
+    }
+    .chat-ai tr:nth-child(even) td { background: #f0f4ff; }
+    .chat-ai tr:hover td { background: #dce8ff; }
 
-    /* ─────────────────────────────────────────
-       5. 출처 카드
-    ───────────────────────────────────────── */
+    /* 발화자 레이블 (나 / DocuMind AI) */
+    .chat-label { font-size: 0.75rem; color: #888; margin-bottom: 4px; }
+    .chat-label-right { text-align: right; }
+
+    /* 출처 카드 */
     .source-card {
         background: #f0f4ff;
         border: 1px solid #d0dff5;
@@ -141,57 +139,23 @@ def apply_styles():
         color: #2c3e50;
         transition: all 0.2s;
     }
+    .source-card:hover { background: #dce8ff; border-color: #2e75b6; }
+    .source-title { font-weight: bold; color: #1f4e79; margin-bottom: 4px; }
+    .source-preview { color: #666; font-size: 0.8rem; line-height: 1.4; }
 
-    .source-card:hover {
-        background: #dce8ff;
-        border-color: #2e75b6;
+    /* 알림 메시지 텍스트 가독성 보정 (커스텀 배경과 충돌 방지) */
+    [data-testid="stAlert"] p,
+    [data-testid="stAlert"] div[data-testid="stMarkdownContainer"] p {
+        color: #1a1a1a !important;
     }
 
-    .source-title {
-        font-weight: bold;
-        color: #1f4e79;
-        margin-bottom: 4px;
-    }
-
-    .source-preview {
-        color: #666;
-        font-size: 0.8rem;
-        line-height: 1.4;
-    }
-
-    /* ─────────────────────────────────────────
-       6. 토큰 정보
-    ───────────────────────────────────────── */
-    .token-info {
-        background: #f8f9fa;
-        border: 1px solid #e9ecef;
-        border-radius: 8px;
-        padding: 8px 14px;
-        font-size: 0.8rem;
-        color: #666;
-        margin-top: 8px;
-        display: flex;
-        gap: 16px;
-    }
-
-    /* ─────────────────────────────────────────
-       7. 배지
-    ───────────────────────────────────────── */
-    .badge {
-        display: inline-block;
-        padding: 3px 10px;
-        border-radius: 20px;
-        font-size: 0.78rem;
-        font-weight: bold;
-    }
-
+    /* 통계 배지 */
+    .badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 0.78rem; font-weight: bold; }
     .badge-success { background: #d4edda; color: #155724; }
     .badge-info    { background: #d1ecf1; color: #0c5460; }
     .badge-warning { background: #fff3cd; color: #856404; }
 
-    /* ─────────────────────────────────────────
-       8. 버튼
-    ───────────────────────────────────────── */
+    /* 사이드바 버튼 */
     .stButton > button {
         background: linear-gradient(135deg, #1f4e79, #2e75b6);
         color: white;
@@ -203,17 +167,13 @@ def apply_styles():
         width: 100%;
         transition: all 0.2s;
     }
-
     .stButton > button:hover {
         background: linear-gradient(135deg, #2e75b6, #3a8fd1);
         transform: translateY(-1px);
         box-shadow: 0 4px 12px rgba(31,78,121,0.3);
     }
 
-    /* ─────────────────────────────────────────
-       9. 입력창
-       ③ 수정 : 느슨한 셀렉터로 변경
-    ───────────────────────────────────────── */
+    /* 텍스트 입력창 */
     .stTextInput input,
     .stTextArea textarea {
         border-radius: 10px;
@@ -222,47 +182,22 @@ def apply_styles():
         font-size: 0.95rem;
         transition: border 0.2s;
     }
-
     .stTextInput input:focus,
     .stTextArea textarea:focus {
         border-color: #2e75b6;
         box-shadow: 0 0 0 3px rgba(46,117,182,0.15);
     }
 
-    /* ─────────────────────────────────────────
-       10. 섹션 + 빈 상태
-    ───────────────────────────────────────── */
-    .section-title {
-        font-size: 1rem;
-        font-weight: 700;
-        color: #1f4e79;
-        margin: 16px 0 8px 0;
-        padding-bottom: 6px;
-        border-bottom: 2px solid #2e75b6;
-    }
-
-    .empty-state {
-        text-align: center;
-        padding: 48px 24px;
-        color: #aaa;
-    }
-
-    .empty-state h3 {
-        font-size: 1.2rem;
-        margin-bottom: 8px;
-        color: #ccc;
-    }
-
-    .empty-state p {
-        font-size: 0.9rem;
-    }
+    /* 파일 미업로드 상태의 빈 화면 */
+    .empty-state { text-align: center; padding: 48px 24px; color: #aaa; }
+    .empty-state h3 { font-size: 1.2rem; margin-bottom: 8px; color: #ccc; }
+    .empty-state p { font-size: 0.9rem; }
 
     </style>
     """, unsafe_allow_html=True)
 
 
 def render_header():
-    """상단 헤더 렌더링 함수"""
     st.markdown("""
     <div class="main-header">
         <h1>🧠 DocuMind AI</h1>
@@ -272,16 +207,6 @@ def render_header():
 
 
 def render_chat_message(role: str, content: str):
-    """
-    채팅 말풍선 렌더링 함수
-
-    Args:
-        role    : "user" 또는 "assistant"
-        content : 메시지 내용
-
-    ① 수정 : AI 답변을 markdown → HTML 변환 후 렌더링
-             마크다운 문법이 그대로 노출되는 버그 방지
-    """
     if role == "user":
         st.markdown(f"""
         <div class="chat-label chat-label-right">나 👤</div>
@@ -290,8 +215,7 @@ def render_chat_message(role: str, content: str):
         </div>
         """, unsafe_allow_html=True)
     else:
-        # AI 답변 마크다운 → HTML 변환
-        content_html = md.markdown(content)
+        content_html = md.markdown(content, extensions=["tables", "nl2br"])  # 마크다운 표/줄바꿈을 HTML로 변환
         st.markdown(f"""
         <div class="chat-label">🧠 DocuMind AI</div>
         <div class="chat-ai-wrap">
@@ -301,43 +225,24 @@ def render_chat_message(role: str, content: str):
 
 
 def render_source_card(source: dict):
-    """
-    출처 카드 렌더링 함수
-
-    Args:
-        source : {파일명, 페이지, 내용 미리보기}
-    """
     st.markdown(f"""
     <div class="source-card">
-        <div class="source-title">
-            📄 {source['파일명']} / {source['페이지']}페이지
-        </div>
-        <div class="source-preview">
-            {source['내용 미리보기']}...
-        </div>
+        <div class="source-title">{source['파일명']} / {source['페이지']}페이지</div>
+        <div class="source-preview">{source['내용 미리보기']}...</div>
     </div>
     """, unsafe_allow_html=True)
 
 
 def render_empty_state():
-    """파일 업로드 전 빈 화면 렌더링"""
     st.markdown("""
     <div class="empty-state">
-        <h3>📂 문서를 업로드해주세요</h3>
-        <p>왼쪽 사이드바에서 PDF, DOCX, XLSX, PPTX 파일을<br>
-        업로드하면 AI가 문서를 분석하고 질문에 답변해드립니다.</p>
+        <h3>문서를 업로드해주세요</h3>
+        <p>왼쪽 사이드바 또는 아래 채팅 입력창의 📎 버튼으로<br>
+        PDF, DOCX, XLSX, PPTX 파일을 업로드하면<br>
+        AI가 문서를 분석하고 질문에 답변해드립니다.</p>
     </div>
     """, unsafe_allow_html=True)
 
 
 def render_badge(text: str, badge_type: str = "info"):
-    """
-    상태 배지 렌더링 함수
-
-    Args:
-        text       : 배지 텍스트
-        badge_type : "success", "info", "warning"
-    """
-    st.markdown(f"""
-    <span class="badge badge-{badge_type}">{text}</span>
-    """, unsafe_allow_html=True)
+    st.markdown(f'<span class="badge badge-{badge_type}">{text}</span>', unsafe_allow_html=True)
