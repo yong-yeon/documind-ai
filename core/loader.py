@@ -10,18 +10,20 @@ from PIL import Image        # fitz 픽셀맵 → pytesseract 가 읽을 수 있
 from langchain_core.documents import Document                   # 텍스트 + 메타데이터를 묶는 LangChain 문서 객체
 from langchain_text_splitters import RecursiveCharacterTextSplitter  # 긴 텍스트를 청크 단위로 자르는 분할기
 
-# Windows는 Tesseract가 시스템 PATH에 등록되지 않는 경우가 많아 절대 경로를 직접 지정
-# Linux(Streamlit Cloud 등)는 packages.txt로 설치된 tesseract-ocr이 PATH에 등록되어 있어 별도 지정 불필요
-if platform.system() == "Windows":
-    pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
-
-OCR_THRESHOLD = 20    # fitz 로 추출한 텍스트가 이 글자 수 미만이면 스캔 PDF 로 판단 → OCR 전환
-OCR_DPI       = 300   # 300 DPI 로 렌더링해야 한국어 획 복잡도에도 인식률 확보 가능
-TESS_CONFIG   = "--psm 6 --oem 3"  # psm 6: 균일 텍스트 블록 모드 / oem 3: LSTM 최신 엔진 사용
+OCR_THRESHOLD      = 20    # fitz 로 추출한 텍스트가 이 글자 수 미만이면 스캔 PDF 로 판단 → OCR 전환
+OCR_DPI            = 300   # 300 DPI 로 렌더링해야 한국어 획 복잡도에도 인식률 확보 가능
+TESS_CONFIG        = "--psm 6 --oem 3"  # psm 6: 균일 텍스트 블록 모드 / oem 3: LSTM 최신 엔진 사용
+TESSERACT_WIN_PATH = r"C:\Program Files\Tesseract-OCR\tesseract.exe"  # Windows 기본 설치 경로
 
 HEADER_FOOTER_MIN_RATIO  = 0.3  # 전체 페이지의 이 비율 이상 반복되면 헤더/푸터 후보로 판단
 HEADER_FOOTER_MIN_COUNT  = 2    # 비율 계산과 별개로 최소 이 횟수 이상 등장해야 함 (페이지 적은 문서 오탐 방지)
 HEADER_FOOTER_MAX_LENGTH = 200  # 이 글자 수 이상인 블록은 본문으로 간주해 헤더/푸터 후보에서 제외
+
+# Windows에서 TESSERACT_WIN_PATH 경로에 실행 파일이 실제로 있을 때만 절대 경로 지정
+# (다른 경로에 설치해 PATH로 등록한 사용자의 경우 존재하지 않는 경로를 강제로 가리키지 않도록 함)
+# Linux(Streamlit Cloud 등)는 packages.txt로 설치된 tesseract-ocr이 PATH에 등록되어 있어 별도 지정 불필요
+if platform.system() == "Windows" and os.path.exists(TESSERACT_WIN_PATH):
+    pytesseract.pytesseract.tesseract_cmd = TESSERACT_WIN_PATH
 
 try:
     from config import DEFAULT_CHUNK_SIZE, DEFAULT_CHUNK_OVERLAP  # 앱 정상 실행 시 루트에서 import
