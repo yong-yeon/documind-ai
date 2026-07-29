@@ -1,6 +1,7 @@
 import os                    # 파일 경로 처리, 파일 존재 확인, 파일 삭제
 import re                    # 헤더/푸터 후보 텍스트의 숫자를 정규화 패턴으로 치환하기 위한 정규식
 import sys                   # 다른 폴더의 모듈을 import 할 때 경로 추가용
+import platform              # OS 판별 (Windows 여부 확인용)
 import tempfile              # 업로드 파일을 디스크에 임시 저장하기 위한 임시 파일 생성
 import fitz                  # PDF 텍스트 추출 및 페이지 이미지 렌더링 (PyMuPDF)
 import pytesseract           # Tesseract OCR 엔진을 파이썬에서 사용하기 위한 래퍼
@@ -9,8 +10,10 @@ from PIL import Image        # fitz 픽셀맵 → pytesseract 가 읽을 수 있
 from langchain_core.documents import Document                   # 텍스트 + 메타데이터를 묶는 LangChain 문서 객체
 from langchain_text_splitters import RecursiveCharacterTextSplitter  # 긴 텍스트를 청크 단위로 자르는 분할기
 
-# Tesseract 실행 파일 경로를 직접 지정 (시스템 PATH 에 등록 안 된 경우 대비)
-pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
+# Windows는 Tesseract가 시스템 PATH에 등록되지 않는 경우가 많아 절대 경로를 직접 지정
+# Linux(Streamlit Cloud 등)는 packages.txt로 설치된 tesseract-ocr이 PATH에 등록되어 있어 별도 지정 불필요
+if platform.system() == "Windows":
+    pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
 
 OCR_THRESHOLD = 20    # fitz 로 추출한 텍스트가 이 글자 수 미만이면 스캔 PDF 로 판단 → OCR 전환
 OCR_DPI       = 300   # 300 DPI 로 렌더링해야 한국어 획 복잡도에도 인식률 확보 가능
