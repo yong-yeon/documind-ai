@@ -4,6 +4,7 @@ __pycache__/
 *.pyo
 data/
 *.pdf
+!docs/DocuMindAI_Portfolio.pdf
 *.docx
 *.xlsx
 *.pptx
