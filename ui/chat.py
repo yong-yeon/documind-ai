@@ -3,7 +3,7 @@ import sys  # 모듈 경로 추가용
 import streamlit as st
 
 try:
-    from core.rag import create_chain, get_sources                   # RAG 체인 생성, 출처 조회
+    from core.rag import create_chain_with_sources, extract_sources  # RAG 체인 생성(답변+출처 동시 조회)
     from core.memory import (
         init_memory, add_message, get_chat_history,
         get_history_as_string, clear_memory, save_history_to_json, get_message_count
@@ -11,7 +11,7 @@ try:
     from ui.styles import render_chat_message, render_source_card, render_badge  # UI 컴포넌트
 except ModuleNotFoundError:
     sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))  # 루트 경로 추가
-    from core.rag import create_chain, get_sources
+    from core.rag import create_chain_with_sources, extract_sources
     from core.memory import (
         init_memory, add_message, get_chat_history,
         get_history_as_string, clear_memory, save_history_to_json, get_message_count
@@ -55,13 +55,14 @@ def render_chat(retriever, sidebar_settings: dict):
         with st.spinner("답변을 생성하는 중입니다..."):
             try:
                 chat_history_str = get_history_as_string(max_turns=5)  # 최근 5턴 대화를 문자열로 변환
-                chain = create_chain(                                   # RAG 체인 생성
+                chain = create_chain_with_sources(                      # RAG 체인 생성
                     retriever,
                     chat_history=chat_history_str,
                     mode=sidebar_settings.get("answer_mode", "hybrid")
                 )
-                answer  = chain.invoke(question)            # 질문을 체인에 전달해 답변 생성
-                sources = get_sources(retriever, question)  # 참고 출처 목록 조회
+                result  = chain.invoke(question)          # 답변과 검색된 docs를 한 번에 생성 (검색 1회)
+                answer  = result["answer"]
+                sources = extract_sources(result["docs"])  # 이미 검색된 docs에서 출처 추출 (재검색 없음)
             except Exception as e:
                 answer  = f"답변 생성 중 오류가 발생했습니다: {str(e)}"
                 sources = []

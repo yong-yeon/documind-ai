@@ -1,30 +1,29 @@
-import os             # 파일 경로 처리
-import sys            # 모듈 경로 추가용
-import streamlit as st  # LLM 캐싱용
+import os
+import sys
+import re
+import streamlit as st
 
 try:
-    from config import get_groq_api_key, LLM_MODEL          # 일반 실행 시 import
+    from config import get_groq_api_key, LLM_MODEL
 except ModuleNotFoundError:
-    sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))  # 루트 경로 추가
-    from config import get_groq_api_key, LLM_MODEL          # 직접 실행 시 import
+    sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    from config import get_groq_api_key, LLM_MODEL
 
-from langchain_groq import ChatGroq                         # Groq LLM 래퍼
-from langchain_core.prompts import PromptTemplate           # 프롬프트 템플릿
-from langchain_core.output_parsers import StrOutputParser   # LLM 출력을 문자열로 변환
-from langchain_core.runnables import RunnablePassthrough    # 입력값을 그대로 다음 단계로 전달
+from langchain_groq import ChatGroq
+from langchain_core.prompts import PromptTemplate
+from langchain_core.output_parsers import StrOutputParser
+from langchain_core.runnables import RunnablePassthrough, RunnableParallel, RunnableLambda
 
 
-@st.cache_resource(show_spinner=False)  # 앱 실행 중 한 번만 생성, 이후 재사용
+@st.cache_resource(show_spinner=False)
 def create_llm():
-    api_key = get_groq_api_key()                            # 환경 변수에서 API 키 가져옴
+    api_key = get_groq_api_key()
     if not api_key:
         raise ValueError("API 키를 찾을 수 없습니다. .env 파일을 확인해주세요.")
-    return ChatGroq(api_key=api_key, model_name=LLM_MODEL, temperature=0.1)  # temperature 낮게 설정해 일관된 답변 생성
+    return ChatGroq(api_key=api_key, model_name=LLM_MODEL, temperature=0.1)
 
 
 def create_prompt(mode: str = "hybrid"):
-    # hybrid: 문서 우선, 관련 내용 없으면 AI 자체 지식으로 보완
-    # document: 문서 내용만 사용, 외부 지식 완전 차단
     if mode == "document":
         template = """
 당신은 문서 분석 전문가 AI입니다.
@@ -58,11 +57,10 @@ def create_prompt(mode: str = "hybrid"):
 {question}
 
 [답변 형식]
-답변
-(질문에 대한 답변)
+**답변:** (질문에 대한 답변)
 
-참고 페이지 (문서 참고 시에만 표시)
-3페이지 또는 3페이지, 5페이지
+(문서를 참고한 경우에만 아래 줄 추가, 참고하지 않은 경우 생략)
+**참고 페이지:** 3페이지 또는 3페이지, 5페이지
 """
     else:
         template = """
@@ -98,55 +96,68 @@ def create_prompt(mode: str = "hybrid"):
 {question}
 
 [답변 형식]
-답변
-(질문에 대한 답변)
+**답변:** (질문에 대한 답변)
 
-참고 페이지 (문서 참고 시에만 표시)
-3페이지 또는 3페이지, 5페이지
+(문서를 참고한 경우에만 아래 줄 추가, 참고하지 않은 경우 생략)
+**참고 페이지:** 3페이지 또는 3페이지, 5페이지
 """
-    return PromptTemplate.from_template(template)  # 문자열 템플릿을 LangChain 프롬프트 객체로 변환
+    return PromptTemplate.from_template(template)
+
+
+def clean_answer(answer: str) -> str:
+    # "참고 페이지: 없음" 패턴 제거 (실제 페이지 번호 있는 경우는 유지)
+    answer = re.sub(r'\*{0,2}참고 페이지\*{0,2}:\s*(없음|None|없습니다\.?)\s*\n?', '', answer)
+    return answer.strip()
 
 
 def format_docs(docs) -> str:
     result = []
     for doc in docs:
-        source     = os.path.basename(doc.metadata.get("source", "알 수 없음"))  # 파일명만 추출
-        page_label = doc.metadata.get("page_label", "?")               # 실제 인쇄 페이지 번호 레이블
-        result.append(f"[출처 : {source} / {page_label}페이지]\n{doc.page_content}")  # 출처 헤더 + 본문
-    return "\n\n".join(result)  # 청크 간 빈 줄로 구분해 하나의 문자열로 합침
+        source     = os.path.basename(doc.metadata.get("source", "알 수 없음"))
+        page_label = doc.metadata.get("page_label", "?")
+        result.append(f"[출처 : {source} / {page_label}페이지]\n{doc.page_content}")
+    return "\n\n".join(result)
 
 
-def create_chain(retriever, chat_history: str = "", mode: str = "hybrid"):
-    prompt = create_prompt(mode)  # 모드에 맞는 프롬프트 템플릿 생성
-    llm    = create_llm()         # Groq LLM 인스턴스 생성
+def create_chain_with_sources(retriever, chat_history: str = "", mode: str = "hybrid"):
+    prompt = create_prompt(mode)
+    llm    = create_llm()
 
     chain = (
-        {
-            "context":      retriever | format_docs,    # 질문으로 검색 후 문자열로 포맷
-            "question":     RunnablePassthrough(),       # 질문 그대로 전달
-            "chat_history": lambda _: chat_history,     # 이전 대화 기록 고정 주입
-        }
-        | prompt           # 딕셔너리를 프롬프트 템플릿에 채움
-        | llm              # 완성된 프롬프트를 LLM에 전달
-        | StrOutputParser()  # LLM 응답 객체를 순수 문자열로 변환
+        RunnableParallel({
+            "docs":     retriever,
+            "question": RunnablePassthrough(),
+        })
+        | RunnablePassthrough.assign(
+            answer=(
+                {
+                    "context":      lambda x: format_docs(x["docs"]),
+                    "question":     lambda x: x["question"],
+                    "chat_history": lambda _: chat_history,
+                }
+                | prompt
+                | llm
+                | StrOutputParser()
+                | RunnableLambda(clean_answer)
+            )
+        )
     )
     return chain
 
 
-def get_sources(retriever, query: str) -> list:
-    docs = retriever.invoke(query)  # 질문과 유사한 청크 검색
+def extract_sources(docs: list) -> list:
     sources = []
-    seen = set()  # 동일 페이지 중복 출처 카드 방지
+    seen = set()
     for doc in docs:
         source     = os.path.basename(doc.metadata.get("source", "알 수 없음"))
-        page_label = doc.metadata.get("page_label", "?")  # 실제 인쇄 페이지 번호 레이블
+        page_label = doc.metadata.get("page_label", "?")
         key = (source, page_label)
         if key in seen:
-            continue  # 같은 파일·같은 페이지 중복 제거
+            continue
         seen.add(key)
         sources.append({
             "파일명":        source,
             "페이지":        page_label,
-            "내용 미리보기": doc.page_content[:100],  # 출처 카드에 표시할 미리보기 (100자)
+            "내용 미리보기": doc.page_content[:100],
         })
     return sources
