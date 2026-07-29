@@ -19,11 +19,11 @@ def get_groq_api_key():
 LLM_MODEL       = "llama-3.3-70b-versatile"                              # 답변 생성에 사용할 Groq LLM 모델
 EMBEDDING_MODEL = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"  # 텍스트 임베딩 모델 (한국어 지원)
 
-DEFAULT_CHUNK_SIZE    = 1000  # 청크 수를 줄여 임베딩 시간 단축
+DEFAULT_CHUNK_SIZE    = 700  # 청크 크기를 줄여 청크당 내용을 세분화, 검색 정확도 향상 (청크 수는 증가, 1000→700)
 DEFAULT_CHUNK_OVERLAP = 150   # 청크 간 겹치는 글자 수 (문맥 연결용)
 
 DEFAULT_SEARCH_TYPE = "mmr"   # 기본 검색 방식: MMR (중복 줄이고 다양한 결과 반환)
-DEFAULT_K           = 7       # 답변 생성 시 참고할 청크 개수 (5→7)
+DEFAULT_K           = 5       # 답변 생성 시 참고할 청크 개수 (7→5)
 DEFAULT_FETCH_K     = 30      # MMR 후보군 크기 (이 중에서 k개를 선별, 20→30)
 
 SUPPORTED_EXTENSIONS = [".pdf", ".docx", ".xlsx", ".pptx"]  # 업로드 허용 파일 형식
