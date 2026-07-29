@@ -237,9 +237,8 @@ def render_empty_state():
     st.markdown("""
     <div class="empty-state">
         <h3>문서를 업로드해주세요</h3>
-        <p>왼쪽 사이드바 또는 아래 채팅 입력창의 📎 버튼으로<br>
-        PDF, DOCX, XLSX, PPTX 파일을 업로드하면<br>
-        AI가 문서를 분석하고 질문에 답변해드립니다.</p>
+        <p>PDF, DOCX, XLSX, PPTX 파일을 업로드하면
+            AI가 문서 내용을 분석하여 질문에 답변합니다.</p>
     </div>
     """, unsafe_allow_html=True)
 
