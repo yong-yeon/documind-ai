@@ -18,7 +18,7 @@ except ModuleNotFoundError:
 def render_sidebar() -> dict:
     with st.sidebar:
         st.markdown("## DocuMind AI")
-        st.caption("다중 문서 통합 분석 시스템")
+        st.caption("다중 형식 문서 분석 시스템")
         st.divider()
 
         # 파일 업로드

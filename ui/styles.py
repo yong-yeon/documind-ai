@@ -201,7 +201,7 @@ def render_header():
     st.markdown("""
     <div class="main-header">
         <h1>🧠 DocuMind AI</h1>
-        <p>다중 문서 통합 분석 및 출처 추적 QA 시스템</p>
+        <p>다중 형식 문서 분석 및 출처 추적 QA 시스템</p>
     </div>
     """, unsafe_allow_html=True)
 
